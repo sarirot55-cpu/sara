@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת שליטה: קוממיות 2026 | אברהם העברי</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&family=Heebo:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1e40af; --secondary: #3b82f6; --accent: #f59e0b; }
+        body { font-family: 'Assistant', sans-serif; background: #f1f5f9; color: #0f172a; margin: 0; overflow-x: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+        .phone-display { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #38bdf8; font-family: monospace; border: 2px solid #334155; }
+        .instruction-pulse { animation: shadow-pulse 2s infinite; }
+        @keyframes shadow-pulse { 0% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4); } 100% { box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); } }
+        .grid-custom { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .answer-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <!-- לוח בקרה מרכזי להצגה על מסך -->
+    <div id="main-interface" class="w-full max-w-6xl glass-panel rounded-[3rem] overflow-hidden flex flex-col min-h-[90vh] relative">
+        
+        <!-- סרגל הוראות עליון קבוע -->
+        <div class="bg-blue-600 p-4 text-white flex justify-between items-center shadow-lg px-10">
+            <div class="flex items-center gap-4">
+                <i class="fas fa-phone-volume text-2xl animate-bounce"></i>
+                <span class="text-xl font-bold tracking-wide">חייגו כעת לחיבור למשחק: <span class="text-3xl font-black underline">077-2298729</span></span>
+            </div>
+            <div class="bg-blue-800 px-4 py-1 rounded-full text-sm font-bold border border-blue-400">
+                שיחה קולית בלבד (תואם טלפונים כשרים)
+            </div>
+        </div>
+
+        <!-- דף התחלה: רישום הקהל -->
+        <div id="setup-screen" class="p-8 md:p-12 flex flex-col items-center text-center space-y-8 h-full">
+            <div class="space-y-4">
+                <img src="https://image.pollinations.ai/prompt/vintage-telecom-switchboard-cables-israel?width=800&height=400&nologo=true&seed=101&model=turbo" class="w-full max-w-2xl h-48 object-cover rounded-3xl mx-auto shadow-xl border-4 border-white">
+                <h1 class="text-4xl font-black text-slate-800 mt-6">מערכת קליקרים קולית - מושב קוממיות</h1>
+                <p class="text-lg text-slate-500 max-w-3xl font-medium">לפני שמתחילים, יש לוודא שכל 40 השחקנים התקשרו למספר המופיע למעלה. המערכת תזהה אתכם לפי מספר הטלפון שלכם.</p>
+            </div>
+
+            <div class="w-full max-w-4xl bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
+                <div class="flex justify-between items-center mb-4 px-2">
+                    <span class="font-bold text-slate-600">רשימת 40 קווי תקשורת מחוברים:</span>
+                    <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">ממתין לשיחות...</span>
+                </div>
+                <div id="phone-registration-grid" class="grid-custom max-h-[350px] overflow-y-auto pr-2 custom-scroll">
+                    <!-- ייווצר ע"י JS -->
+                </div>
+            </div>
+
+            <button onclick="startVisualGame()" class="bg-slate-900 text-white font-bold py-5 px-20 rounded-2xl text-2xl shadow-2xl instruction-pulse transition-transform hover:scale-105 active:scale-95">
+                התחל את המשחק <i class="fas fa-play-circle mr-2"></i>
+            </button>
+        </div>
+
+        <!-- דף המשחק: תצוגת השאלות לקהל -->
+        <div id="game-display" class="hidden flex flex-col flex-grow">
+            <div class="p-8 flex flex-col md:flex-row gap-8 flex-grow">
+                
+                <!-- צד ימין: השאלה והתמונות -->
+                <div class="flex-grow space-y-8 text-center md:text-right">
+                    <div class="relative group">
+                        <img id="q-image" src="" class="w-full h-80 object-cover rounded-[3rem] shadow-2xl border-8 border-white">
+                        <div class="absolute top-6 right-6 bg-blue-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black shadow-xl" id="display-q-num">1</div>
+                    </div>
+                    
+                    <h2 class="text-4xl font-black text-slate-800 leading-tight" id="display-q-text">טוען שאלה...</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="display-answers">
+                        <!-- התשובות יוזרקו כאן -->
+                    </div>
+
+                    <div class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 flex items-center justify-center gap-6">
+                        <span class="text-xl font-bold text-blue-900">הקישו במקשי הטלפון שלכם:</span>
+                        <div class="flex gap-4">
+                            <span class="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm font-black border border-blue-200">1</span>
+                            <span class="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm font-black border border-blue-200">2</span>
+                            <span class="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm font-black border border-blue-200">3</span>
+                            <span class="bg-white w-10 h-10 rounded-lg flex items-center justify-center shadow-sm font-black border border-blue-200">4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- צד שמאל: מצב חיבורים וניקוד חי -->
+                <div class="w-full md:w-80 flex flex-col gap-6">
+                    <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl">
+                        <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">סטטוס מענה חי</h3>
+                        <div class="space-y-3" id="live-feed">
+                            <!-- כאן יופיעו הטלפונים שענו -->
+                        </div>
+                        <div class="mt-6 pt-6 border-t border-slate-700 text-center">
+                            <span class="text-4xl font-black text-white" id="response-count">0</span>
+                            <span class="block text-xs text-slate-400">משתתפים ענו</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="showLeaderboard()" class="w-full bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-amber-600 transition-colors">
+                        הצג טבלת מובילים <i class="fas fa-trophy mr-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- דף טבלת מובילים -->
+        <div id="leaderboard-screen" class="hidden p-12 text-center flex-grow flex flex-col items-center justify-center space-y-10 bg-slate-50">
+            <div class="flex items-center gap-6">
+                <i class="fas fa-crown text-7xl text-amber-500"></i>
+                <h2 class="text-6xl font-black text-slate-800">האלופים של קוממיות</h2>
+                <i class="fas fa-crown text-7xl text-amber-500"></i>
+            </div>
+            <div id="leader-list" class="w-full max-w-2xl space-y-4">
+                <!-- רשימת המובילים -->
+            </div>
+            <button onclick="resumeFromLeaderboard()" class="bg-blue-600 text-white py-5 px-16 rounded-3xl font-bold text-2xl shadow-xl hover:scale-105 transition-transform">
+                המשך לשאלה הבאה <i class="fas fa-chevron-left mr-2"></i>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // יצירת 40 שורות של קווי טלפון (וירטואליים)
+        const grid = document.getElementById('phone-registration-grid');
+        for (let i = 1; i <= 40; i++) {
+            grid.innerHTML += `
+                <div class="phone-display p-3 rounded-xl flex flex-col items-center justify-center gap-1 opacity-40" id="slot-${i}">
+                    <span class="text-[9px] uppercase font-bold text-slate-500">קו מס' ${i}</span>
+                    <span class="text-xs font-bold" id="num-${i}">מנותק</span>
+                    <i class="fas fa-phone-slash text-[10px]"></i>
+                </div>
+            `;
+        }
+
+        const questions = [
+            { q: "באיזה שנה נוסד מושב קוממיות על ידי הרב מנדלזון?", a: ["1950", "1948", "1955", "1960"], c: "1950", img: "ancient-israel-pioneers-black-white" },
+            { q: "מה היה הנס שקרה בשנה השביעית הראשונה?", a: ["צמיחה מוגברת מהרגיל ללא עבודה", "גילוי מעיין מים חדש", "הגעת רכבת למושב", "אין שום נס"], c: "צמיחה מוגברת מהרגיל ללא עבודה", img: "miracle-wheat-field-sunlight" },
+            { q: "כמה משפחות מונה המושב כיום בערך?", a: ["קרוב למאה משפחות", "300 משפחות", "20 משפחות", "אלף משפחות"], c: "קרוב למאה משפחות", img: "small-village-israel-houses" },
+            { q: "מה קרה לענף הרפתות במושב עם השנים?", a: ["הרפתות נסגרו והתושבים עברו לעבוד בחוץ", "הרפת הפכה למפעל הגבינות הגדול בארץ", "כל בית מחזיק רפת קטנה בחצר", "הרפתות עברו לתוך המערות"], c: "הרפתות נסגרו והתושבים עברו לעבוד בחוץ", img: "old-barn-transformation" },
+            { q: "מהו מקור הפרנסה המודרני העיקרי בתוך המושב?", a: ["תיירות ואירוח בצימרים", "גידול בקר וצאן", "מפעל לייצור מטוסים", "מכרות יהלומים"], c: "תיירות ואירוח בצימרים", img: "israeli-guest-house-exterior" },
+            { q: "כיצד מנוהלת החקלאות בשדות המושב כיום?", a: ["הנהלת המושב מעבדת את השדות ע''י עובדים", "כל תושב יוצא בבוקר לחרוש את חלקתו", "השדות שייכים לצבא", "אין חקלאות בכלל"], c: "הנהלת המושב מעבדת את השדות ע''י עובדים", img: "modern-israel-tractor-plow" },
+            { q: "איזה חיה הכי נפוצה כיום בחצרות הבתים?", a: ["חתולים", "פרות", "כבשים", "גמלים"], c: "חתולים", img: "cat-on-old-village-wall" },
+            { q: "כיצד נחגג ליל הסדר במושב?", a: ["כל משפחה בביתה באופן פרטי", "סדר קהילתי גדול בבית הכנסת", "יוצאים לחופשה משותפת", "אין ליל סדר"], c: "כל משפחה בביתה באופן פרטי", img: "jewish-family-seder-private" },
+            { q: "מה השימוש העיקרי במבני המשק הישנים (לשעבר לולים/רפתות)?", a: ["מחסנים או יחידות אירוח", "בתי קולנוע", "חניונים למשאיות", "אולמות ספורט"], c: "מחסנים או יחידות אירוח", img: "old-renovated-stone-building" },
+            { q: "מי היה נשיא המדינה שהגיע לביקור היסטורי והתרשם מהמושב?", a: ["יצחק בן צבי", "חיים ויצמן", "שמעון פרס", "רובי ריבלין"], c: "יצחק בן צבי", img: "historical-israeli-president-visit" }
+        ];
+
+        // הוספת שאלות נוספות ל-45
+        for(let i=11; i<=45; i++) {
+            questions.push({
+                q: `שאלה מורשת מספר ${i}: האם החקלאות המקורית של המייסדים השתנתה?`,
+                a: ["כן, התאימה את עצמה לשינויי הזמן", "לא, הכל בדיוק אותו דבר", "המושב הפך לעיר", "המושב ננטש"],
+                c: "כן, התאימה את עצמה לשינויי הזמן",
+                img: "israel-legacy-field"
+            });
+        }
+
+        let currentIdx = 0;
+        let score = 0;
+        let responders = 0;
+
+        function startVisualGame() {
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-display').classList.remove('hidden');
+            renderQ();
+        }
+
+        function renderQ() {
+            const q = questions[currentIdx];
+            document.getElementById('display-q-num').innerText = currentIdx + 1;
+            document.getElementById('display-q-text').innerText = q.q;
+            document.getElementById('response-count').innerText = 0;
+            document.getElementById('live-feed').innerHTML = '';
+            
+            const seed = Math.floor(Math.random() * 8888);
+            document.getElementById('q-image').src = `https://image.pollinations.ai/prompt/${q.img}?width=800&height=500&nologo=true&seed=${seed}&model=turbo`;
+
+            const ansDiv = document.getElementById('display-answers');
+            ansDiv.innerHTML = '';
+            q.a.forEach((ans, i) => {
+                ansDiv.innerHTML += `
+                    <div class="answer-card bg-white p-6 rounded-3xl border-4 border-slate-100 flex items-center gap-6 shadow-md">
+                        <div class="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-2xl">${i+1}</div>
+                        <span class="text-2xl font-bold text-slate-700">${ans}</span>
+                    </div>
+                `;
+            });
+
+            // סימולציית כניסת תשובות בטלפון
+            simulateResponses();
+        }
+// חיבור לשרת בזמן אמת
+const socket = io();
+let connectedPlayers = {}; // נשמור את השחקנים שחייגו
+let activeSlots = 1;
+
+// 1. קליטת שחקן חדש בשלב ההמתנה
+socket.on('player-connected', (data) => {
+    if (!connectedPlayers[data.phone] && activeSlots <= 40) {
+        connectedPlayers[data.phone] = { slot: activeSlots, score: 0 };
+        
+        const slotElement = document.getElementById(`slot-${activeSlots}`);
+        const numElement = document.getElementById(`num-${activeSlots}`);
+        
+        slotElement.classList.remove('opacity-40');
+        slotElement.classList.add('border-green-500', 'text-green-400');
+        numElement.innerText = data.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1-***-$2');
+        
+        const icon = slotElement.querySelector('i');
+        icon.className = 'fas fa-phone text-[10px] text-green-400 animate-pulse';
+        
+        activeSlots++;
+    }
+});
+
+// 2. קליטת תשובה אמיתית בזמן המשחק
+let currentResponders = 0;
+socket.on('player-answered', (data) => {
+    if (connectedPlayers[data.phone]) {
+        currentResponders++;
+        document.getElementById('response-count').innerText = currentResponders;
+        
+        const feed = document.getElementById('live-feed');
+        const hiddenPhone = data.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1-***-$2');
+        
+        feed.innerHTML = `<div class="bg-slate-800 p-2 rounded-xl text-xs flex justify-between animate-in slide-in-from-right">
+            <span>${hiddenPhone}</span>
+            <span class="text-green-400 font-bold">לחץ ${data.answer}</span>
+        </div>` + feed.innerHTML;
+    }
+});
+
+// הפונקציה הישנה נשארת ריקה כדי שלא תגרום לשגיאות בקוד
+function simulateResponses() { }
+        () {
+            
+            }
+        }
+
+        function showLeaderboard() {
+            document.getElementById('game-display').classList.add('hidden');
+            document.getElementById('leaderboard-screen').classList.remove('hidden');
+            
+            const list = document.getElementById('leader-list');
+            list.innerHTML = '';
+            const mocks = [
+                {p: '052-***4451', s: score + 1200},
+                {p: '050-***9928', s: score + 1150},
+                {p: '058-***3320', s: score + 1100},
+                {p: '053-***0012', s: score + 950},
+                {p: '054-***6671', s: score + 900}
+            ];
+
+            mocks.forEach((m, i) => {
+                list.innerHTML += `
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border-2 border-slate-100 flex justify-between items-center transform transition hover:scale-102">
+                        <div class="flex items-center gap-6">
+                            <span class="text-3xl font-black ${i<3?'text-amber-500':'text-slate-300'}">#${i+1}</span>
+                            <span class="text-2xl font-mono font-bold text-slate-700">${m.p}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-3xl font-black text-blue-600">${m.s}</span>
+                            <span class="block text-[10px] uppercase font-bold text-slate-400">נקודות</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function resumeFromLeaderboard() {
+            document.getElementById('leaderboard-screen').classList.add('hidden');
+            document.getElementById('game-display').classList.remove('hidden');
+            currentIdx++;
+            if (currentIdx < questions.length) {
+                renderQ();
+            } else {
+                alert("המשחק הושלם בהצלחה!");
+                location.reload();
+            }
+        }
+    </script>
+
+    <footer style="text-align: center; padding: 15px; font-size: 12px; color: #888; width: 100%; border-top: 1px solid #eee; margin-top: 20px; font-family: sans-serif; background: rgba(255,255,255,0.8); border-radius: 1rem;">פותח על ידי אברהם העברי 2026 כל הזכויות שמורות &copy;</footer>
+</body>
+</html>
